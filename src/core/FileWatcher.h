@@ -59,10 +59,8 @@ private:
     QTimer m_fileChecksumTimer;
     int m_fileChecksumSizeBytes = -1;
     bool m_ignoreFileChange = false;
-
-    QFuture<QByteArray> m_checksumFuture;
-    std::unique_ptr<QFutureWatcher<QByteArray>> m_checksumFutureWatcher =
-        std:: make_unique<QFutureWatcher<QByteArray>>();
+    QFuture<QByteArray> m_checksumFuture = QFuture<QByteArray>();
+    std::unique_ptr<QFutureWatcher<QByteArray>> m_checksumFutureWatcher;
 
 };
 

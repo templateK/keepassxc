@@ -31,6 +31,7 @@ FileWatcher::FileWatcher(QObject* parent)
     connect(&m_fileWatcher, SIGNAL(fileChanged(QString)), SLOT(checkFileChanged()));
     connect(&m_fileChecksumTimer, SIGNAL(timeout()), SLOT(checkFileChanged()));
     connect(&m_fileChangeDelayTimer, &QTimer::timeout, this, [this] { emit fileChanged(m_filePath); });
+    m_checksumFutureWatcher = std::make_unique<QFutureWatcher<QByteArray>>(this);
     connect(m_checksumFutureWatcher.get(), SIGNAL(finished()), SLOT(checksumCalcFinished()));
     m_fileChangeDelayTimer.setSingleShot(true);
     m_fileIgnoreDelayTimer.setSingleShot(true);
@@ -70,7 +71,6 @@ void FileWatcher::start(const QString& filePath, int checksumIntervalSeconds, in
         m_fileChecksumTimer.start(checksumIntervalSeconds * 1000);
     }
 
-    m_ignoreFileChange = false;
 }
 
 void FileWatcher::stop()
@@ -125,15 +125,12 @@ void FileWatcher::checkFileChanged()
         return;
     }
 
-    // prevent duplicate thread for calculating checksum.
-    if (m_checksumFuture.isRunning()) {
-        return;
-    }
-
-    m_checksumFuture = QtConcurrent::run(this, &FileWatcher::calculateChecksum);
-    auto p = m_checksumFutureWatcher.get();
-    if ( p != nullptr ) {
-        p->setFuture(m_checksumFuture);
+    if (m_checksumFutureWatcher) {
+        // prevent duplicate thread for calculating checksum.
+        if (m_checksumFuture.isCanceled() || (m_checksumFuture.isStarted() && m_checksumFuture.isFinished())) {
+            m_checksumFuture = QtConcurrent::run(this, &FileWatcher::calculateChecksum);
+            m_checksumFutureWatcher->setFuture(m_checksumFuture);
+        }
     }
 }
 
