@@ -21,9 +21,6 @@
 
 #include <QCryptographicHash>
 
-#include <iostream>
-#include <unistd.h>
-
 #ifdef Q_OS_LINUX
 #include <sys/vfs.h>
 #endif
@@ -105,8 +102,6 @@ void FileWatcher::resume()
 void FileWatcher::checksumCalcFinished()
 {
     QByteArray checksum = m_checksumFuture.result();
-    std::cout << "checksumCalcFinished()" << std::endl;
-    // TODO: implementd what todo after chcecksum calculated;
     if (checksum != m_fileChecksum) {
         m_fileChecksum = checksum;
         m_fileChangeDelayTimer.start(0);
@@ -156,6 +151,5 @@ QByteArray FileWatcher::calculateChecksum()
     }
     // If we fail to open the file return the last known checksum, this
     // prevents unnecessary merge requests on intermittent network shares
-    sleep(10);
     return m_fileChecksum;
 }
