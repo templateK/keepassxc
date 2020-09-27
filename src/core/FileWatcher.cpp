@@ -21,6 +21,9 @@
 
 #include <QCryptographicHash>
 
+#include <iostream>
+#include <unistd.h>
+
 #ifdef Q_OS_LINUX
 #include <sys/vfs.h>
 #endif
@@ -31,6 +34,7 @@ FileWatcher::FileWatcher(QObject* parent)
     connect(&m_fileWatcher, SIGNAL(fileChanged(QString)), SLOT(checkFileChanged()));
     connect(&m_fileChecksumTimer, SIGNAL(timeout()), SLOT(checkFileChanged()));
     connect(&m_fileChangeDelayTimer, &QTimer::timeout, this, [this] { emit fileChanged(m_filePath); });
+    connect(m_checksumFutureWatcher.get(), SIGNAL(finished()), SLOT(checksumCalcFinished()));
     m_fileChangeDelayTimer.setSingleShot(true);
     m_fileIgnoreDelayTimer.setSingleShot(true);
 }
@@ -98,6 +102,17 @@ void FileWatcher::resume()
     }
 }
 
+void FileWatcher::checksumCalcFinished()
+{
+    QByteArray checksum = m_checksumFuture.result();
+    std::cout << "checksumCalcFinished()" << std::endl;
+    // TODO: implementd what todo after chcecksum calculated;
+    if (checksum != m_fileChecksum) {
+        m_fileChecksum = checksum;
+        m_fileChangeDelayTimer.start(0);
+    }
+}
+
 bool FileWatcher::shouldIgnoreChanges()
 {
     return m_filePath.isEmpty() || m_ignoreFileChange || m_fileIgnoreDelayTimer.isActive()
@@ -115,16 +130,16 @@ void FileWatcher::checkFileChanged()
         return;
     }
 
-    // Prevent reentrance
-    m_ignoreFileChange = true;
-
-    auto checksum = calculateChecksum();
-    if (checksum != m_fileChecksum) {
-        m_fileChecksum = checksum;
-        m_fileChangeDelayTimer.start(0);
+    // prevent duplicate thread for calculating checksum.
+    if (m_checksumFuture.isRunning()) {
+        return;
     }
 
-    m_ignoreFileChange = false;
+    m_checksumFuture = QtConcurrent::run(this, &FileWatcher::calculateChecksum);
+    auto p = m_checksumFutureWatcher.get();
+    if ( p != nullptr ) {
+        p->setFuture(m_checksumFuture);
+    }
 }
 
 QByteArray FileWatcher::calculateChecksum()
@@ -141,5 +156,6 @@ QByteArray FileWatcher::calculateChecksum()
     }
     // If we fail to open the file return the last known checksum, this
     // prevents unnecessary merge requests on intermittent network shares
+    sleep(10);
     return m_fileChecksum;
 }

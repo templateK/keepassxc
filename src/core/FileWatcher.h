@@ -20,6 +20,8 @@
 
 #include <QFileSystemWatcher>
 #include <QTimer>
+#include <QFuture>
+#include <memory>
 
 class FileWatcher : public QObject
 {
@@ -43,6 +45,7 @@ public slots:
 
 private slots:
     void checkFileChanged();
+    void checksumCalcFinished();
 
 private:
     QByteArray calculateChecksum();
@@ -56,6 +59,11 @@ private:
     QTimer m_fileChecksumTimer;
     int m_fileChecksumSizeBytes = -1;
     bool m_ignoreFileChange = false;
+
+    QFuture<QByteArray> m_checksumFuture;
+    std::unique_ptr<QFutureWatcher<QByteArray>> m_checksumFutureWatcher =
+        std:: make_unique<QFutureWatcher<QByteArray>>();
+
 };
 
 #endif // KEEPASSXC_FILEWATCHER_H
