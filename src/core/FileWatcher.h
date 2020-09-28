@@ -49,14 +49,14 @@ private slots:
 
 private:
     QByteArray calculateChecksum();
-    bool shouldIgnoreChanges();
+    // bool shouldIgnoreChanges();
 
     QString m_filePath;
     QFileSystemWatcher m_fileWatcher;
     QByteArray m_fileChecksum;
-    QTimer m_fileChangeDelayTimer;
-    QTimer m_fileIgnoreDelayTimer;
-    QTimer m_fileChecksumTimer;
+    // QTimer m_fileChangeDelayTimer;
+    // QTimer m_fileIgnoreDelayTimer;
+    // QTimer m_fileChecksumTimer;
     int m_fileChecksumSizeBytes = -1;
     bool m_ignoreFileChange = false;
     QFuture<QByteArray> m_checksumFuture = QFuture<QByteArray>();

@@ -29,12 +29,12 @@ FileWatcher::FileWatcher(QObject* parent)
     : QObject(parent)
 {
     connect(&m_fileWatcher, SIGNAL(fileChanged(QString)), SLOT(checkFileChanged()));
-    connect(&m_fileChecksumTimer, SIGNAL(timeout()), SLOT(checkFileChanged()));
-    connect(&m_fileChangeDelayTimer, &QTimer::timeout, this, [this] { emit fileChanged(m_filePath); });
+    // connect(&m_fileChecksumTimer, SIGNAL(timeout()), SLOT(checkFileChanged()));
+    // connect(&m_fileChangeDelayTimer, &QTimer::timeout, this, [this] { emit fileChanged(m_filePath); });
     m_checksumFutureWatcher = std::make_unique<QFutureWatcher<QByteArray>>(this);
     connect(m_checksumFutureWatcher.get(), SIGNAL(finished()), SLOT(checksumCalcFinished()));
-    m_fileChangeDelayTimer.setSingleShot(true);
-    m_fileIgnoreDelayTimer.setSingleShot(true);
+    // m_fileChangeDelayTimer.setSingleShot(true);
+    // m_fileIgnoreDelayTimer.setSingleShot(true);
 }
 
 FileWatcher::~FileWatcher()
@@ -67,9 +67,9 @@ void FileWatcher::start(const QString& filePath, int checksumIntervalSeconds, in
     // Handle file checksum
     m_fileChecksumSizeBytes = checksumSizeKibibytes * 1024;
     m_fileChecksum = calculateChecksum();
-    if (checksumIntervalSeconds > 0) {
-        m_fileChecksumTimer.start(checksumIntervalSeconds * 1000);
-    }
+    // if (checksumIntervalSeconds > 0) {
+    //     m_fileChecksumTimer.start(checksumIntervalSeconds * 1000);
+    // }
 
 }
 
@@ -80,23 +80,23 @@ void FileWatcher::stop()
     }
     m_filePath.clear();
     m_fileChecksum.clear();
-    m_fileChecksumTimer.stop();
-    m_fileChangeDelayTimer.stop();
+    // m_fileChecksumTimer.stop();
+    // m_fileChangeDelayTimer.stop();
 }
 
 void FileWatcher::pause()
 {
     m_ignoreFileChange = true;
-    m_fileChangeDelayTimer.stop();
+    // m_fileChangeDelayTimer.stop();
 }
 
 void FileWatcher::resume()
 {
-    m_ignoreFileChange = false;
+    // m_ignoreFileChange = false;
     // Add a short delay to start in the next event loop
-    if (!m_fileIgnoreDelayTimer.isActive()) {
-        m_fileIgnoreDelayTimer.start(0);
-    }
+    // if (!m_fileIgnoreDelayTimer.isActive()) {
+    //     m_fileIgnoreDelayTimer.start(0);
+    // }
 }
 
 void FileWatcher::checksumCalcFinished()
@@ -104,15 +104,16 @@ void FileWatcher::checksumCalcFinished()
     QByteArray checksum = m_checksumFuture.result();
     if (checksum != m_fileChecksum) {
         m_fileChecksum = checksum;
-        m_fileChangeDelayTimer.start(0);
+        emit fileChanged(m_filePath);
+        // m_fileChangeDelayTimer.start(0);
     }
 }
 
-bool FileWatcher::shouldIgnoreChanges()
-{
-    return m_filePath.isEmpty() || m_ignoreFileChange || m_fileIgnoreDelayTimer.isActive()
-           || m_fileChangeDelayTimer.isActive();
-}
+// bool FileWatcher::shouldIgnoreChanges()
+// {
+//     return m_filePath.isEmpty() || m_ignoreFileChange || m_fileIgnoreDelayTimer.isActive();
+//            // || m_fileChangeDelayTimer.isActive();
+// }
 
 bool FileWatcher::hasSameFileChecksum()
 {
@@ -121,7 +122,7 @@ bool FileWatcher::hasSameFileChecksum()
 
 void FileWatcher::checkFileChanged()
 {
-    if (shouldIgnoreChanges()) {
+    if (m_filePath.isEmpty()) {
         return;
     }
 
