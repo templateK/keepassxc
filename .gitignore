@@ -20,4 +20,5 @@ desktop.ini
 /prime/
 /*.snap
 /*_source.tar.bz2
-
+compile_commands.json
+.clangd
